@@ -28,7 +28,7 @@ inputModelName <- args[2]
 fileList <- read.csv( args[3] )
 probImagePrefix <- args[4]
 
-numberOfThreads <- 4
+numberOfThreads <- 1
 if( length( args ) >= 5 )
   {
   numberOfThreads <- as.numeric( args[5] )
@@ -72,6 +72,11 @@ for( j in 1:length( featureNames ) )
 colnames( subjectData ) <- c( featureNames )
 subjectData <- as.data.frame( subjectData )
 
+# If the subject data has NA's, we need to get rid of them
+# since predict.randomForest will return NA's otherwise.
+# Setting NA's to 0 is a complete hack.
+subjectData[is.na( subjectData )] <- 0
+
 ###############################################
 #
 # Predict using the model (in parallel)
@@ -94,6 +99,7 @@ parallelPredict <- function( i ) {
 
 if( numberOfThreads == 1 )
   {
+
   subjectProbabilities <- predict( modelForest, subjectData, type = "prob" )
 
   # Stop the clock

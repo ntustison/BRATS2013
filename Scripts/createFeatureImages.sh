@@ -68,6 +68,7 @@ Optional arguments:
      -f:  difference pair                       pair of indices \"i.e. 3x1\" to create difference image \"image[3] - image[1]\"
      -l:  tumor core label                      used to create distance feature map (default = 5)
      -n   imageNames                            used in the naming of the images (otherwise, labeled IMAGE0, IMAGE1, etc)
+     -u   symmetric template mask
 
 USAGE
     exit 1
@@ -80,6 +81,7 @@ echoParameters() {
       image dimension         = ${DIMENSION}
       anatomical image        = ${ANATOMICAL_IMAGES[@]}
       symmetric templates     = ${SYMMETRIC_TEMPLATES[@]}
+      symmetric template mask = ${SYMMETRIC_TEMPLATE_MASK}
       cluster centers         = ${CLUSTER_CENTERS[@]}
       image names             = ${IMAGE_NAMES[@]}
       radii                   = ${RADII[@]}
@@ -125,6 +127,7 @@ DIMENSION=3
 ANATOMICAL_IMAGES=()
 NORMALIZED_IMAGES=()
 SYMMETRIC_TEMPLATE=()
+SYMMETRIC_TEMPLATE_MASK=""
 CLUSTER_CENTERS=()
 NUMBER_OF_LABELS=7
 IMAGE_NAMES=()
@@ -148,7 +151,7 @@ if [[ $# -lt 3 ]] ; then
   Usage >&2
   exit 1
 else
-  while getopts "a:b:c:d:f:g:h:l:n:o:p:r:s:t:x:" OPT
+  while getopts "a:b:c:d:f:g:h:l:n:o:p:r:s:t:u:x:" OPT
     do
       case $OPT in
           a) #anatomical image
@@ -198,6 +201,9 @@ else
        ;;
           t)
        SYMMETRIC_TEMPLATES[${#SYMMETRIC_TEMPLATES[@]}]=$OPTARG
+       ;;
+          u)
+       SYMMETRIC_TEMPLATE_MASK=$OPTARG
        ;;
           x)
        MASK_IMAGE=$OPTARG
@@ -381,9 +387,12 @@ if [[ $DIMENSION -eq 3 ]];
 
 REG_BASE="${ANTSPATH}/antsRegistration -d ${DIMENSION} -w [0.01,0.995] -o ${OUTPUT_REGISTRATION_PREFIX}"
 REG_LEV0="-r [${NORMALIZED_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1]"
-REG_LEV1="-t Rigid[0.1] -m MI[${NORMALIZED_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,32,Regular,0.25] -s 2x1x0 -f 4x2x1 -c [500x250x100,1e-8,15]"
-REG_LEV2="-t Affine[0.1] -m MI[${NORMALIZED_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,32,Regular,0.25] -s 2x1x0 -f 4x2x1 -c [500x250x100,1e-8,15]"
-REG_LEV3="-t BSplineSyN[0.1,${MESH_SIZE},${MESH_SIZE2}] -m CC[${NORMALIZED_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,4] -s 2x1x0 -f 4x2x1 -c [70x50x10,1e-8,15]"
+# REG_LEV1="-t Rigid[0.1] -m MI[${NORMALIZED_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,32,Regular,0.25] -s 2x1x0 -f 4x2x1 -c [500x250x100,1e-8,15]"
+# REG_LEV2="-t Affine[0.1] -m MI[${NORMALIZED_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,32,Regular,0.25] -s 2x1x0 -f 4x2x1 -c [500x250x100,1e-8,15]"
+# REG_LEV3="-t BSplineSyN[0.1,${MESH_SIZE},${MESH_SIZE2}] -m CC[${NORMALIZED_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,4] -s 2x1x0 -f 4x2x1 -c [70x50x10,1e-8,15]"
+REG_LEV1="-t Rigid[0.1] -m MI[${NORMALIZED_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,32,Regular,0.25] -s 2x1x0 -f 8x4x2 -c [500x250x100,1e-8,15]"
+REG_LEV2="-t Affine[0.1] -m MI[${NORMALIZED_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,32,Regular,0.25] -s 2x1x0 -f 8x4x2 -c [500x250x100,1e-8,15]"
+REG_LEV3="-t BSplineSyN[0.1,${MESH_SIZE},${MESH_SIZE2}] -m CC[${NORMALIZED_IMAGES[0]},${SYMMETRIC_TEMPLATES[0]},1,4] -s 2x1x0x0 -f 6x4x2x1 -c [70x50x10x0,1e-8,15]"
 
 AFFINE=${OUTPUT_REGISTRATION_PREFIX}0GenericAffine.mat
 WARP=${OUTPUT_REGISTRATION_PREFIX}1Warp.nii.gz
@@ -394,6 +403,13 @@ if [[ ! -f $WARP ]];
     logCmd $REG_BASE $REG_LEV0 $REG_LEV1 $REG_LEV2 $REG_LEV3
   fi
 
+# if template mask is specified, we warp it
+OUTPUT_IMAGE=${OUTPUT_PREFIX}SYMMETRIC_TEMPLATE_MASK_WARPED.${OUTPUT_SUFFIX}
+if [[ ! -f $OUTPUT_IMAGE ]];
+  then
+    logCmd ${ANTSPATH}/antsApplyTransforms -d ${DIMENSION} -n MultiLabel -r ${NORMALIZED_IMAGES[0]} -i ${SYMMETRIC_TEMPLATE_MASK} -o ${OUTPUT_IMAGE} -t $WARP -t $AFFINE
+  fi
+
 # log jacobian image
 OUTPUT_IMAGE=${OUTPUT_PREFIX}LOG_JACOBIAN.${OUTPUT_SUFFIX}
 if [[ ! -f ${OUTPUT_IMAGE} ]];
@@ -401,7 +417,6 @@ if [[ ! -f ${OUTPUT_IMAGE} ]];
     logCmd ${ANTSPATH}/ANTSJacobian ${DIMENSION} $WARP $OUTPUT_REGISTRATION_PREFIX 1
     logCmd mv ${OUTPUT_REGISTRATION_PREFIX}logjacobian.nii.gz $OUTPUT_IMAGE
   fi
-
 
 for (( i = 0; i < ${#NORMALIZED_IMAGES[@]}; i++ ))
   do
