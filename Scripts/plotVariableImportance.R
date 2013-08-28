@@ -43,7 +43,7 @@ vPlot <- ggplot( data = forestImp.df, aes( x = Importance, y = Statistic ) ) +
          ylab( "Variable" ) +
          xlab( "Importance" ) +
          scale_color_continuous( low = "navyblue", high = "darkred" ) +
-         theme( axis.text.y = element_text( size = 5 ) ) +
+         theme( axis.text.y = element_text( size = 8 ) ) +
          theme( legend.position = "none" )
 
 ggsave( file = outputFile, plot = vPlot, width = 8, height = 10 )

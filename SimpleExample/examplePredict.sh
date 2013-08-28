@@ -92,5 +92,34 @@ for (( i=0; i<${#TESTING_SUBJECTS[@]}; i++ ))
       -p ${OUTPUT_PREFIX}_RF_POSTERIORS%d.nii.gz \
       -m ${MAP_MRF_MODEL}.RData
 
+    ${ANTSPATH}/ImageMath 2 ${OUTPUT_PREFIX}_RF_LABELS.nii.gz MostLikely 0 ${OUTPUT_PREFIX}_RF_POSTERIORS*.nii.gz
+
   done
 
+######################################################################################
+#
+# Screen dump consisting of label overlap measures with "true" labels
+#
+######################################################################################
+
+for (( i=0; i<${#TESTING_SUBJECTS[@]}; i++ ))
+  do
+    echo ""
+    echo "============================================================="
+    echo "    Label overlap measures for ${TESTING_SUBJECTS[$i]}"
+    echo ""
+
+    TRUTH=${TESTING_DATA_DIRECTORY}/${TESTING_SUBJECTS[$i]}/${TESTING_SUBJECTS[$i]}_atropos_truth_slice${TESTING_SLICES[$i]}.nii.gz
+
+    SUBJECT_PROCESSED_DIRECTORY=${PROCESSED_DIRECTORY}/${TESTING_SUBJECTS[$i]}/
+    OUTPUT_PREFIX=${SUBJECT_PROCESSED_DIRECTORY}/${TESTING_SUBJECTS[$i]}
+
+    echo "    Command call: ${ANTSPATH}/LabelOverlapMeasures 2 ${OUTPUT_PREFIX}_RF_LABELS.nii.gz $TRUTH"
+    echo "-------------------------------------------------------------"
+    echo ""
+
+    ${ANTSPATH}/LabelOverlapMeasures 2 ${OUTPUT_PREFIX}_RF_LABELS.nii.gz $TRUTH
+
+    echo "============================================================="
+    echo ""
+  done
