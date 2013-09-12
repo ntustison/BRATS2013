@@ -5,7 +5,7 @@ VERSION="0.0"
 ## need to change so that SCRIPTSPATH is where createFeatureImages.sh
 ## and the other scripts are located.
 
-SCRIPTSPATH=/Users/ntustison/Documents/Academic/SubmittedPapers/BRATS2013/Scripts/
+SCRIPTSPATH=/Users/ntustison/Documents/Academic/InProgress/BRATS2013/Scripts/
 
 if [[ ! -d "$ANTSPATH" ]];
   then
