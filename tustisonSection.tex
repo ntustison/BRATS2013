@@ -1,0 +1,110 @@
+%*** Authors: send us names and affiliations of your co-authors (ie. the co-authors from your abstract) using the following latex format:
+%\author[label1,label2]{<author name>} %% use the full name, without abbreviating the first name  
+%\address[label1]{<address>}  
+%\address[label2]{<address>}
+
+\author[label1]{Nicholas J. Tustison}
+\author[label1]{Max Wintermark}
+\author[label1]{Christopher R. Durst}
+\author[label2]{Brian B. Avants}
+\address[label1]{Department of Radiology and Medical Imaging, University of Virginia, Charlottesville, VA}
+\address[label2]{Penn Image Computing and Science Lab, Department of Radiology, University of Pennsylvania, Philadelphia PA}
+
+Given the success of random forest (RF)-based approaches in the BRATS 2012 
+challenge, we employed RFs to produce a completely automated,
+multi-modality brain segmentation framework.  However, differences from 
+related work include an expanded feature image set, concatenated RF
+modeling, and an open source implementation%
+\footnote{
+https://github.com/ntustison/BRATS2013
+}
+heavily dependent on the Advanced Normalization Tools (ANTs)%
+\footnote{
+http://stnava.github.io/ANTs
+} repository including its R packaging (ANTsR).%
+\footnote{
+http://stnava.github.io/ANTsR
+}
+It is the latter open source aspect of our work which 
+significantly motivated our participation in BRATS 2013 
+as it provides a reproducible and publicly available framework 
+for performing such an important task in neuroimaging 
+\cite{ince2012}.
+
+%*** Algorithm and data:  describe image features, classifiers, and spatial regularization (if these categories are meaningful for your approach). Name key parameters of your algorithm and their influence and mention if your algorithm needs manual input. Please also mention any additional preprocessing (normalization? registration?) and how you dealt with multichannel information and multiclass problem in case there was anything special about it (describe the processing pipeline where you fuse information from different channels, for example). Please give us a rough idea about the computing time and tell us what part of the algorithm is consuming most it.
+
+The workflow for estimating tumor-based labeling from multi-modal 
+images involves the following steps:
+\begin{enumerate}
+  \item Symmetric multivariate template construction \cite{avants2010}
+ using the data described in \cite{landman2011}.
+  \item Image preprocessing:
+    \begin{itemize}
+      \item Windowing intensities (quantiles $[0.01,0.99]$).
+      \item N4 bias correction \cite{tustison2010}.
+      \item Rescaling intensity range to $[0,1]$.  
+    \end{itemize}
+  \item Stage 1 (GMM) processing:
+  \begin{itemize}
+    \item generation of feature images,
+    \item construction of the Stage 1 RF model and probability images.
+  \end{itemize}
+  \item Stage 2 processing:
+  \begin{itemize}
+    \item generation of single-modality MAP-MRF images using the Stage 1 RF probability images as spatial priors,
+    \item construction of the Stage 2 RF model and labelings.
+  \end{itemize}
+  \item Refinement of Stage 2 labelings using a heuristically-derived binary morphological processing protocol.
+\end{enumerate}
+
+We used the following feature images:
+\begin{itemize}
+  \item Per modality (FLAIR, T1, T1C, T2)
+    \begin{itemize}
+      \item First-order neighborhood statistical images:
+            mean, variance, skewness, and entropy. 
+            Neighborhood radius $\in \{1,3\}$.
+    \item GMM (stage 1) and MAP-MRF (stage 2) posteriors: CSF, gray matter, white 
+          matter, necrosis, edema, non-enhancing tumor and enhancing tumor (or a
+          subset for the simulated data).
+    \item GMM (stage 1) and MAP-MRF (stage 2) connected component geometry 
+          features:  distance to tumor core label, volume, volume to surface area ratio, eccentricity, and elongation
+    \item Template-based:  symmetric template difference and 
+          contralateral difference with Gaussian smoothing ($\sigma = 4$mm).
+    \end{itemize}
+  \item Miscellaneous: normalized Euclidean distance based on cerebral mask,
+    log Jacobian image, and  (T1C - T1) difference image.
+\end{itemize}
+
+Prior cluster centers for specific tissue types learned from training data are 
+used in the first stage to construct multiple GMM-based feature images \cite{avants2011}.  
+The resulting spatial priors derived from application of the RF
+ model for the first stage were used as input to an iterative
+$n$-tissue N4 $\rightleftharpoons$ Atropos MAP-MRF segmentation protocol 
+These are used to create modified feature images for the second stage.
+ANTs registration \cite{avants2011a} is also used to produce three sets of 
+feature images:  the log Jacobian image, 
+intensity differences between each modality of each subject 
+and the corresponding symmetric template, and contralateral 
+differences.  
+
+All processing was performed
+using the computational cluster at the University of Virginia.%
+\footnote{
+http://www.uvacse.virginia.edu
+}
+Timing measures (single-threaded) included $\sim$1.5 hours per subject for 
+feature image creation with the bulk of time devoted to spatial normalization 
+with the symmetric template.  Model
+construction required $\sim$2 hours with prediction taking approximately
+15 minutes per subject.
+
+%*** Training and testing: describe how you trained your algorithm. Did you do a cross-validation for parameter adaption? Did you learn individual classifiers for each of the four sub-problems (high/low & real/sim). Did you use any other data sets for training or tuning? Finally, mention shortcomings of your algorithm that you became aware of (specific cases or general difficulties), and ideas about how to possibly overcome them. If you had specific reasons why you did not apply your algorithm to all test sets, please mention them as well.
+
+Training was performed separately for both real and simulated data and 
+high-grade versus low-grade tumor assessment resulting in four RF modeling/prediction
+pathways. Training was limited to the 80 evaluation data sets 
+provided by the organizers with evaluation employing a leave-one-out
+strategy for each of the four groupings.
+
+
