@@ -425,7 +425,7 @@ if [[ ! -f $OUTPUT_IMAGE && -f $SYMMETRIC_TEMPLATE_MASK ]];
 OUTPUT_IMAGE=${OUTPUT_PREFIX}LOG_JACOBIAN.${OUTPUT_SUFFIX}
 if [[ ! -f ${OUTPUT_IMAGE} ]];
   then
-    logCmd ${ANTSPATH}/ANTSJacobian ${DIMENSION} $WARP $OUTPUT_REGISTRATION_PREFIX 1
+    logCmd ${ANTSPATH}/CreateJacobianDeterminantImage ${DIMENSION} $WARP ${OUTPUT_REGISTRATION_PREFIX}logjacobian.nii.gz 1
     logCmd mv ${OUTPUT_REGISTRATION_PREFIX}logjacobian.nii.gz $OUTPUT_IMAGE
   fi
 
