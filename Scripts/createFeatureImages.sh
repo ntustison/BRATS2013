@@ -482,7 +482,7 @@ for (( i = 0; i < ${#NORMALIZED_IMAGES[@]}; i++ ))
             COMMAND_LINE_LABELS=''
             for (( j = 1; j <= ${NUMBER_OF_LABELS}; j++ ))
               do
-                COMMAND_LINE_LABELS="${COMMAND_LINE_LABELS} -l $j"
+                COMMAND_LINE_LABELS="${COMMAND_LINE_LABELS} -y $j"
               done
 
             bash ${ANTSPATH}/antsAtroposN4.sh \
